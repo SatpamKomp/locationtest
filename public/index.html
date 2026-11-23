@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Location Test</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 480px; margin: 30px auto; padding: 0 16px; line-height: 1.6; }
+  pre { background: rgba(127,127,127,0.12); padding: 12px; border-radius: 8px; white-space: pre-wrap; word-break: break-all; font-size: 13px; }
+  button { padding: 10px 16px; border-radius: 8px; border: none; background: #2563eb; color: white; font-size: 15px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h2>Location Test Page</h2>
+<p id="status">Checking your location…</p>
+<pre id="debug">—</pre>
+<button id="retry" style="display:none">Try GPS again</button>
+
+<script>
+const statusEl = document.getElementById('status');
+const debugEl = document.getElementById('debug');
+const retryBtn = document.getElementById('retry');
+
+async function sendToBackend(payload) {
+  try {
+    const res = await fetch('/api/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    debugEl.textContent = JSON.stringify(data.received, null, 2);
+  } catch (err) {
+    debugEl.textContent = 'Failed to reach backend: ' + err.message;
+  }
+}
+
+function requestGPS() {
+  statusEl.textContent = 'Requesting location permission…';
+  retryBtn.style.display = 'none';
+
+  if (!navigator.geolocation) {
+    statusEl.textContent = 'Geolocation not supported.';
+    sendToBackend({});
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      statusEl.textContent = 'Location captured — sent to server.';
+      sendToBackend({
+        gpsLat: pos.coords.latitude,
+        gpsLng: pos.coords.longitude,
+        gpsAccuracy: pos.coords.accuracy,
+      });
+    },
+    (err) => {
+      statusEl.textContent = 'GPS denied/unavailable: ' + err.message;
+      retryBtn.style.display = 'inline-block';
+      sendToBackend({});
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+retryBtn.addEventListener('click', requestGPS);
+requestGPS();
+</script>
+
+</body>
+</html>
